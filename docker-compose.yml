@@ -29,6 +29,7 @@ services:
       dockerfile: Dockerfile
     environment:
       - MONGODB_URI=mongodb://special_umbrella:TBA2yac4kjzhnj2bqn@db:27017/special_umbrella
+      - MONGODB_DATABASE=special_umbrella
     ports:
       - "8080:8080"
     networks:

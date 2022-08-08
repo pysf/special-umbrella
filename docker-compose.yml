@@ -24,16 +24,11 @@ services:
       - db:/bitnami/mongodb
   api:
     container_name: api
-
     build:
       context: .
       dockerfile: Dockerfile
     environment:
-      - MONGODB_PASSWORD=TBA2yac4kjz@hnj2bqn
-      - MONGODB_USERNAME=special_umbrella
-      - MONGODB_PORT=27017
-      - MONGODB_DATABASE=special_umbrella
-      - MONGODB_HOST=db
+      - MONGODB_URI=mongodb://special_umbrella:TBA2yac4kjzhnj2bqn@db:27017/special_umbrella
     ports:
       - "8080:8080"
     networks:

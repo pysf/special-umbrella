@@ -1,0 +1,42 @@
+version: "3.8"
+
+networks:
+  app-net:
+    driver: bridge
+
+volumes:
+  db:
+
+services:
+  db:
+    container_name: db
+    image: bitnami/mongodb:6.0
+    environment:
+      - MONGODB_USERNAME=special_umbrella
+      - MONGODB_ROOT_PASSWORD=BediraeougcoeudHheu
+      - MONGODB_PASSWORD=TBA2yac4kjzhnj2bqn
+      - MONGODB_DATABASE=special_umbrella
+    ports:
+      - 27017:27017
+    networks:
+      - app-net
+    volumes:
+      - db:/bitnami/mongodb
+  api:
+    container_name: api
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - MONGODB_PASSWORD=TBA2yac4kjz@hnj2bqn
+      - MONGODB_USERNAME=special_umbrella
+      - MONGODB_PORT=27017
+      - MONGODB_DATABASE=special_umbrella
+      - MONGODB_HOST=db
+    ports:
+      - "8080:8080"
+    networks:
+      - app-net
+    volumes:
+      - .:/opt/app

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/google/uuid"
+	"github.com/pysf/special-umbrella/internal/db"
 	"github.com/pysf/special-umbrella/internal/model"
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -15,35 +15,40 @@ import (
 
 const SCOOTER_COLLECTION string = "scooter"
 
-func NewMongoDBScooterRepository(client *mongo.Client) (model.ScooterStatusRepository, error) {
+func NewScooterStatusRepository() (model.ScooterStatusRepository, error) {
+
+	client, err := db.CreateConnection()
+	if err != nil {
+		return nil, fmt.Errorf("NewScooterStatusRepository: create connection err=%w", err)
+	}
+
 	dbName, exists := os.LookupEnv("MONGODB_DATABASE")
 	if !exists {
-		return nil, fmt.Errorf("NewMongoDBScooterRepository: MONGODB_DATBASE is empty")
+		return nil, fmt.Errorf("NewMongoDBScooterRepository: MONGODB_DATABASE is empty")
 	}
 
 	collection := client.Database(dbName).Collection(SCOOTER_COLLECTION)
 
-	return &MongoDBScooterRepository{
+	return &ScooterStatusRepository{
 		ScooterCollection: collection,
 		MongoDBClient:     client,
 	}, nil
 }
 
-type MongoDBScooterRepository struct {
+type ScooterStatusRepository struct {
 	ScooterCollection *mongo.Collection
 	MongoDBClient     *mongo.Client
 }
 
-func (sr *MongoDBScooterRepository) AddStatus(ctx context.Context, scooterID string, latitude float64, longitude float64, timestamp time.Time) (*string, error) {
+func (sr *ScooterStatusRepository) AddStatus(ctx context.Context, scooterStatusEvent model.ScooteStatusEvent) (*string, error) {
 	coll := sr.ScooterCollection.Database().Collection(SCOOTER_COLLECTION)
 
-	id := uuid.New().String()
 	event := bson.D{
-		{Key: "_id", Value: id},
-		{Key: "scooterID", Value: scooterID},
-		{Key: "latitude", Value: latitude},
-		{Key: "longitude", Value: longitude},
-		{Key: "timestamp", Value: timestamp},
+		{Key: "_id", Value: uuid.New().String()},
+		{Key: "scooterID", Value: scooterStatusEvent.ScooterID},
+		{Key: "latitude", Value: scooterStatusEvent.Location.Latitude},
+		{Key: "longitude", Value: scooterStatusEvent.Location.Longitude},
+		{Key: "timestamp", Value: scooterStatusEvent.Timestamp},
 	}
 
 	result, err := coll.InsertOne(ctx, event)
@@ -51,7 +56,7 @@ func (sr *MongoDBScooterRepository) AddStatus(ctx context.Context, scooterID str
 		return nil, fmt.Errorf("AddEvent: insert err=%w", err)
 	}
 
-	ss := fmt.Sprint(result.InsertedID)
-	return &ss, nil
+	id := fmt.Sprint(result.InsertedID)
+	return &id, nil
 
 }

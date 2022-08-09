@@ -1,17 +1,16 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
-	"github.com/pysf/special-umbrella/internal/db"
+	"github.com/pysf/special-umbrella/internal/server"
 )
 
 func main() {
-	fmt.Println("Hello Nord!")
-	_, err := db.CreateConnection()
-	if err != nil {
-		fmt.Println(err)
-		panic(err)
-	}
 
+	server, err := server.NewServer()
+	if err != nil {
+		log.Fatalf("Server failde to start %s", err)
+	}
+	server.Start()
 }

@@ -9,5 +9,16 @@ type ScooterStatus struct {
 }
 
 type ScooterStatusRepository interface {
-	AddStatus(ctx context.Context, scooterID string, latitude float64, longitude float64, timestamp time.Time) (*string, error)
+	AddStatus(ctx context.Context, scooterStatusEvent ScooteStatusEvent) (*string, error)
+}
+
+type Location struct {
+	Latitude  float64 `json:"Latitude"`
+	Longitude float64 `json:"Longitude"`
+}
+
+type ScooteStatusEvent struct {
+	ScooterID string    `json:"scooterId"`
+	Timestamp time.Time `json:"timestamp"`
+	Location  Location  `json:"location"`
 }

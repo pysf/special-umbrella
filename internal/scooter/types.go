@@ -6,9 +6,9 @@ type Location struct {
 }
 
 type ScooteStatusEvent struct {
-	ScooterID string
-	Timestamp string
-	Latitude  string
-	Longitude string
-	EventType string
+	ScooterID string `json:"scooterID"`
+	Timestamp string `json:"timestamp"`
+	Latitude  string `json:"latitude"`
+	Longitude string `json:"longitude"`
+	EventType string `json:"eventType"`
 }

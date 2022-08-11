@@ -1,14 +1,22 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pysf/special-umbrella/internal/server"
+	simulator "github.com/pysf/special-umbrella/internal/simulator/scooter"
 )
 
 func main() {
 
-	//todo start the simulator
+	ctx, cancel := context.WithCancel(context.Background())
+	simulator.NewScooterSimulator(
+		simulator.WithCount(100),
+		simulator.WithDistanceShift(1),
+		simulator.WithStartDelay(3),
+	).Start(ctx)
+	defer cancel()
 
 	server, err := server.NewServer()
 	if err != nil {

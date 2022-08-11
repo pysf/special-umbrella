@@ -1,9 +1,13 @@
 package simulator
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -18,7 +22,10 @@ type ScooterSimulator struct {
 	baseLng           float64
 	scootersPerCircle int
 	numberOfScooters  int
+	startDelay        int
 	distanceShift     float64
+	apiURL            string
+	jwtToken          string
 }
 
 func NewScooterSimulator(options ...simulatorOptions) *ScooterSimulator {
@@ -28,6 +35,8 @@ func NewScooterSimulator(options ...simulatorOptions) *ScooterSimulator {
 		scootersPerCircle: 10,
 		numberOfScooters:  100,
 		distanceShift:     0.1,
+		startDelay:        10,
+		apiURL:            "http://127.0.0.1:8080/api/scooter/status",
 	}
 
 	for _, o := range options {
@@ -65,6 +74,64 @@ func WithScooterPerCircle(spc int) simulatorOptions {
 	return func(s *ScooterSimulator) {
 		s.scootersPerCircle = spc
 	}
+}
+
+func WithStartDelay(delayInSec int) simulatorOptions {
+	return func(s *ScooterSimulator) {
+		s.startDelay = delayInSec
+	}
+}
+
+func WithAPIURL(apiURL string) simulatorOptions {
+	return func(s *ScooterSimulator) {
+		s.apiURL = apiURL
+	}
+}
+
+func WithJWTToken(jwtToken string) simulatorOptions {
+	return func(s *ScooterSimulator) {
+		s.jwtToken = jwtToken
+	}
+}
+
+func (s *ScooterSimulator) Start(ctx context.Context) {
+	go func() {
+		time.Sleep(time.Second * time.Duration(s.startDelay))
+		scooters := s.GenerateRandomScooters()
+
+		for _, sc := range scooters {
+			if err := s.Seed(sc); err != nil {
+				fmt.Println("Err: ", err)
+				ctx.Err()
+			}
+
+		}
+
+	}()
+}
+
+func (s *ScooterSimulator) Seed(statusEvent scooter.ScooteStatusEvent) error {
+
+	fmt.Println(statusEvent)
+	b, err := json.Marshal(statusEvent)
+	if err != nil {
+		return fmt.Errorf("Seed: json marshal err= %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, s.apiURL, bytes.NewBuffer(b))
+	if err != nil {
+		return fmt.Errorf("Seed: NewRequest err= %w", err)
+	}
+	req.Header.Add("Authorization", s.jwtToken)
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("Seed: send request err= %w", err)
+	}
+	defer res.Body.Close()
+
+	return nil
 }
 
 func (s *ScooterSimulator) GenerateRandomScooters() []scooter.ScooteStatusEvent {

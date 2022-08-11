@@ -30,6 +30,10 @@ const (
 	SCOOTER_COLLECTION   string = "scooter"
 )
 
+type StatusUpdater struct {
+	DB *mongo.Database
+}
+
 func NewStatusUpdater() (scooter.StatusUpdater, error) {
 
 	client, err := db.CreateConnection()
@@ -47,10 +51,6 @@ func NewStatusUpdater() (scooter.StatusUpdater, error) {
 	return &StatusUpdater{
 		DB: DB,
 	}, nil
-}
-
-type StatusUpdater struct {
-	DB *mongo.Database
 }
 
 func (sr *StatusUpdater) UpdateStatus(ctx context.Context, statusEvent scooter.ScooteStatusEvent) (*string, error) {

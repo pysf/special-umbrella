@@ -102,7 +102,7 @@ func (s *ScooterSimulator) Start(ctx context.Context) {
 		for _, sc := range scooters {
 			if err := s.Seed(sc); err != nil {
 				fmt.Println("Err: ", err)
-				ctx.Err()
+				// ctx.Err()
 			}
 
 		}
@@ -112,7 +112,6 @@ func (s *ScooterSimulator) Start(ctx context.Context) {
 
 func (s *ScooterSimulator) Seed(statusEvent scooter.ScooteStatusEvent) error {
 
-	fmt.Println(statusEvent)
 	b, err := json.Marshal(statusEvent)
 	if err != nil {
 		return fmt.Errorf("Seed: json marshal err= %w", err)
@@ -130,6 +129,10 @@ func (s *ScooterSimulator) Seed(statusEvent scooter.ScooteStatusEvent) error {
 		return fmt.Errorf("Seed: send request err= %w", err)
 	}
 	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("Seed: err= %v", res.Status)
+	}
 
 	return nil
 }

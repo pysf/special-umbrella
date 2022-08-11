@@ -9,6 +9,7 @@ import (
 func main() {
 
 	//todo start the simulator
+
 	server, err := server.NewServer()
 	if err != nil {
 		fmt.Println("Server failde to start")

@@ -1,16 +1,18 @@
 package main
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/pysf/special-umbrella/internal/server"
 )
 
 func main() {
 
+	//todo start the simulator
 	server, err := server.NewServer()
 	if err != nil {
-		log.Fatalf("Server failde to start %s", err)
+		fmt.Println("Server failde to start")
+		panic(err)
 	}
 	server.Start()
 }

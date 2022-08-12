@@ -1,18 +1,18 @@
-package status
+package scooter
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/pysf/special-umbrella/internal/apperror"
+	"github.com/pysf/special-umbrella/internal/config"
 	"github.com/pysf/special-umbrella/internal/db"
-	"github.com/pysf/special-umbrella/internal/scooter"
-	"go.mongodb.org/mongo-driver/bson"
+	"github.com/pysf/special-umbrella/internal/scooter/scooteriface"
+	"github.com/pysf/special-umbrella/internal/scooter/scootertype"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -34,29 +34,23 @@ type StatusUpdater struct {
 	DB *mongo.Database
 }
 
-func NewStatusUpdater() (scooter.StatusUpdater, error) {
+func NewStatusUpdater() (scooteriface.ScooterStatusUpdater, error) {
 
 	client, err := db.CreateConnection()
 	if err != nil {
 		return nil, fmt.Errorf("NewStatusUpdater: create connection err=%w", err)
 	}
 
-	dbName, exists := os.LookupEnv("MONGODB_DATABASE")
-	if !exists {
-		return nil, fmt.Errorf("NewStatusUpdater: MONGODB_DATABASE is empty")
-	}
-
-	DB := client.Database(dbName)
+	DB := client.Database(config.GetConfig("MONGODB_DATABASE"))
 
 	return &StatusUpdater{
 		DB: DB,
 	}, nil
 }
 
-func (sr *StatusUpdater) UpdateStatus(ctx context.Context, statusEvent scooter.ScooteStatusEvent) (*string, error) {
-	coll := sr.DB.Collection(SCOOTER_COLLECTION)
+func (s *StatusUpdater) UpdateStatus(ctx context.Context, updateStatusInput scootertype.ScooterStatusUpdaterInput) (*string, error) {
 
-	timestamp, err := time.Parse(time.RFC3339, statusEvent.Timestamp)
+	timestamp, err := time.Parse(time.RFC3339, updateStatusInput.Timestamp)
 	if err != nil {
 		return nil, apperror.NewAppError(
 			apperror.WithError(fmt.Errorf("UpdateStatus: parse timestamp err= %w", err)),
@@ -64,15 +58,15 @@ func (sr *StatusUpdater) UpdateStatus(ctx context.Context, statusEvent scooter.S
 		)
 	}
 
-	location := scooter.Location{}
-	if err := ParseLocation(statusEvent.Latitude, statusEvent.Longitude, &location); err != nil {
+	location := scootertype.GeoJSON{}
+	if err := parseLocation(updateStatusInput.Latitude, updateStatusInput.Longitude, &location); err != nil {
 		return nil, apperror.NewAppError(
 			apperror.WithError(fmt.Errorf("UpdateStatus: err= %w", err)),
 			apperror.WithStatusCode(http.StatusBadRequest),
 		)
 	}
 
-	status, err := decideStatus(statusEvent.EventType)
+	status, err := decideStatus(updateStatusInput.EventType)
 	if err != nil {
 		return nil, apperror.NewAppError(
 			apperror.WithError(fmt.Errorf("UpdateStatus: err= %w", err)),
@@ -80,17 +74,16 @@ func (sr *StatusUpdater) UpdateStatus(ctx context.Context, statusEvent scooter.S
 		)
 	}
 
-	event := bson.D{
-		{Key: "_id", Value: uuid.New().String()},
-		{Key: "status", Value: status},
-		{Key: "type", Value: statusEvent.EventType},
-		{Key: "scooterID", Value: statusEvent.ScooterID},
-		{Key: "latitude", Value: location.Latitude},
-		{Key: "longitude", Value: location.Longitude},
-		{Key: "timestamp", Value: timestamp},
+	event := scootertype.ScooterStatus{
+		ID:        uuid.New().String(),
+		Status:    status,
+		EventType: updateStatusInput.EventType,
+		ScooterID: updateStatusInput.ScooterID,
+		Timestamp: timestamp,
+		Location:  location,
 	}
 
-	result, err := coll.InsertOne(ctx, event)
+	result, err := s.DB.Collection(SCOOTER_COLLECTION).InsertOne(ctx, event)
 	if err != nil {
 		return nil, fmt.Errorf("UpdateStatus: insert err=%w", err)
 	}
@@ -100,7 +93,7 @@ func (sr *StatusUpdater) UpdateStatus(ctx context.Context, statusEvent scooter.S
 
 }
 
-func ParseLocation(lat, lng string, l *scooter.Location) error {
+func parseLocation(lat, lng string, l *scootertype.GeoJSON) error {
 	latitude, err := strconv.ParseFloat(lat, 64)
 	if err != nil {
 		return fmt.Errorf("ParseLocation: parse latitude err= %w", err)
@@ -111,8 +104,8 @@ func ParseLocation(lat, lng string, l *scooter.Location) error {
 		return fmt.Errorf("ParseLocation: parse longitude err=%w", err)
 	}
 
-	l.Latitude = latitude
-	l.Longitude = longitude
+	l.Type = "Point"
+	l.Coordinates = []float64{latitude, longitude}
 
 	return nil
 }

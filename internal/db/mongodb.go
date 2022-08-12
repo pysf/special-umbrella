@@ -3,8 +3,8 @@ package db
 import (
 	"context"
 	"fmt"
-	"os"
 
+	"github.com/pysf/special-umbrella/internal/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -12,12 +12,7 @@ import (
 
 func CreateConnection() (*mongo.Client, error) {
 
-	mongodbURI, exist := os.LookupEnv("MONGODB_URI")
-	if !exist {
-		return nil, fmt.Errorf("CreateConnection: MONGODB_URI is not set")
-	}
-
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongodbURI))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(config.GetConfig("MONGODB_URI")))
 	if err != nil {
 		return nil, fmt.Errorf("CreateConnection: err= %w", err)
 	}

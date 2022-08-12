@@ -9,7 +9,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pysf/special-umbrella/internal/apperror"
-	"github.com/pysf/special-umbrella/internal/scooter"
+	"github.com/pysf/special-umbrella/internal/scooter/scootertype"
+	"github.com/pysf/special-umbrella/internal/server/servertype"
 )
 
 func (s *Server) UpdateScooterStatus(w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
@@ -19,7 +20,7 @@ func (s *Server) UpdateScooterStatus(w http.ResponseWriter, r *http.Request, p h
 		return fmt.Errorf("AddScooterStatus: failed to read request body err=%w", err)
 	}
 
-	updateReq := &UpdateScooterStatusRequest{}
+	updateReq := &servertype.UpdateScooterStatusRequest{}
 	if err = json.Unmarshal(b, &updateReq); err != nil {
 		return apperror.NewAppError(
 			apperror.WithError(err),
@@ -34,7 +35,7 @@ func (s *Server) UpdateScooterStatus(w http.ResponseWriter, r *http.Request, p h
 		)
 	}
 
-	scooterStatusEvent := scooter.ScooteStatusEvent{
+	scooterStatusEvent := scootertype.ScooterStatusUpdaterInput{
 		EventType: updateReq.EventType,
 		ScooterID: updateReq.ScooterID,
 		Timestamp: updateReq.Timestamp,
@@ -53,10 +54,46 @@ func (s *Server) UpdateScooterStatus(w http.ResponseWriter, r *http.Request, p h
 	return nil
 }
 
-type UpdateScooterStatusRequest struct {
-	EventType string `json:"eventType" validate:"required,ascii"`
-	ScooterID string `json:"scooterID" validate:"required,uuid4"`
-	Latitude  string `json:"latitude"  validate:"required,latitude"`
-	Longitude string `json:"longitude" validate:"required,longitude"`
-	Timestamp string `json:"timestamp" validate:"required,datetime=2006-01-02T15:04:05Z"`
+func (s *Server) FindScooter(w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+
+	query := servertype.FindScootersRequest{}
+
+	query.BottomLeft = scootertype.Location{}
+	if err := json.Unmarshal([]byte(r.URL.Query().Get("bottomLeft")), &query.BottomLeft); err != nil {
+		return apperror.NewAppError(
+			apperror.WithStatusCode(http.StatusBadRequest),
+			apperror.WithError(fmt.Errorf("FinedScooter: invalid bottomLeft coordination, err= %w , expected : [latitude, longitude] ", err)),
+		)
+	}
+
+	query.TopRight = scootertype.Location{}
+	if err := json.Unmarshal([]byte(r.URL.Query().Get("topRight")), &query.TopRight); err != nil {
+		return apperror.NewAppError(
+			apperror.WithStatusCode(http.StatusBadRequest),
+			apperror.WithError(fmt.Errorf("FinedScooter: invalid topRight coordination, err= %w , expected : [latitude, longitude] ", err)),
+		)
+	}
+
+	if err := validator.New().Struct(query); err != nil {
+		return apperror.NewAppError(
+			apperror.WithError(err),
+			apperror.WithStatusCode(http.StatusBadRequest),
+		)
+	}
+
+	result, err := s.ScooterFinder.RectangularQuery(r.Context(), query.BottomLeft, query.TopRight)
+	if err != nil {
+		return err
+	}
+
+	body, err := json.Marshal(result)
+	if err != nil {
+		return fmt.Errorf("FindScooter: failed to create json response, err= %w ", err)
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+	w.Write(body)
+
+	return nil
 }

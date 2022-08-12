@@ -1,11 +1,6 @@
-package scooter
+package simulatortype
 
-type Location struct {
-	Latitude  float64
-	Longitude float64
-}
-
-type ScooteStatusEvent struct {
+type UpdateScooterStatusRequestBody struct {
 	ScooterID string `json:"scooterID"`
 	Timestamp string `json:"timestamp"`
 	Latitude  string `json:"latitude"`

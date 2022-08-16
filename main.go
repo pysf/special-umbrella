@@ -5,18 +5,25 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pysf/special-umbrella/internal/scooter"
 	"github.com/pysf/special-umbrella/internal/server"
 	"github.com/pysf/special-umbrella/internal/simulator"
 )
 
 func main() {
 
+	scooterCreator, err := scooter.NewScooterCreator()
+	if err != nil {
+		panic(err)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	simulator.NewScooterSimulator(
-		simulator.WithCount(100),
+		simulator.WithCount(5),
 		simulator.WithDistanceShift(1),
 		simulator.WithStartDelay(3),
 		simulator.WithJWTToken(os.Getenv("JWT_TOKEN")),
+		simulator.WithScooterCreator(scooterCreator),
 	).Start(ctx)
 	//todo: fix cancel
 	defer cancel()

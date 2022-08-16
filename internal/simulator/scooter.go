@@ -12,6 +12,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pysf/special-umbrella/internal/scooter"
+	"github.com/pysf/special-umbrella/internal/scooter/scooteriface"
+	"github.com/pysf/special-umbrella/internal/scooter/scootertype"
 	"github.com/pysf/special-umbrella/internal/simulator/simulatortype"
 )
 
@@ -26,9 +28,11 @@ type ScooterSimulator struct {
 	distanceShift     float64
 	apiURL            string
 	jwtToken          string
+	scooterCreator    scooteriface.ScooterCreator
 }
 
 func NewScooterSimulator(options ...simulatorOptions) *ScooterSimulator {
+
 	statusSimulator := &ScooterSimulator{
 		baseLat:           52.519511, //Berlin center
 		baseLng:           13.403725,
@@ -94,23 +98,59 @@ func WithJWTToken(jwtToken string) simulatorOptions {
 	}
 }
 
+func WithScooterCreator(sc scooteriface.ScooterCreator) simulatorOptions {
+	return func(s *ScooterSimulator) {
+		s.scooterCreator = sc
+	}
+}
+
 func (s *ScooterSimulator) Start(ctx context.Context) {
 	go func() {
 		time.Sleep(time.Second * time.Duration(s.startDelay))
-		scooters := s.GenerateRandomScooters()
-
-		for _, sc := range scooters {
-			if err := s.Seed(sc); err != nil {
-				fmt.Println("Err: ", err)
-				// ctx.Err()
-			}
-
+		if err := s.addRandomScooters(ctx); err != nil {
+			fmt.Printf("Start: failed to add scooters err=%v", err)
 		}
 
 	}()
 }
 
-func (s *ScooterSimulator) Seed(statusEvent simulatortype.UpdateScooterStatusRequestBody) error {
+func (s *ScooterSimulator) addRandomScooters(ctx context.Context) error {
+
+	distance := s.distanceShift
+
+	var counter int
+	for {
+
+		for i := 0; i < s.scootersPerCircle; i++ {
+
+			// Add a new scooter
+			scooterID, err := addNewScooter(s, ctx)
+			if err != nil {
+				return err
+			}
+
+			// Add a new scooter init event
+			lat, lng := shiftLocation(s.baseLat, s.baseLng, distance, (360/rand.Float64() + 1))
+			event := simulatortype.UpdateScooterStatusRequestBody{
+				ScooterID: *scooterID,
+				EventType: scooter.PeriodicUpdate,
+				Timestamp: time.Now().Format(time.RFC3339),
+				Latitude:  fmt.Sprintf("%f", lat),
+				Longitude: fmt.Sprintf("%f", lng),
+			}
+			s.publishStatusEvents(event)
+			counter++
+
+			if counter >= s.numberOfScooters {
+				return nil
+			}
+		}
+		distance = distance + .2
+	}
+
+}
+
+func (s *ScooterSimulator) publishStatusEvents(statusEvent simulatortype.UpdateScooterStatusRequestBody) error {
 
 	b, err := json.Marshal(statusEvent)
 	if err != nil {
@@ -137,34 +177,18 @@ func (s *ScooterSimulator) Seed(statusEvent simulatortype.UpdateScooterStatusReq
 	return nil
 }
 
-func (s *ScooterSimulator) GenerateRandomScooters() []simulatortype.UpdateScooterStatusRequestBody {
-
-	events := make([]simulatortype.UpdateScooterStatusRequestBody, 0, s.numberOfScooters)
-	distance := s.distanceShift
-
-	for {
-
-		for i := 0; i < s.scootersPerCircle; i++ {
-			lat, lng := ShiftLocation(s.baseLat, s.baseLng, distance, (360/rand.Float64() + 1))
-			events = append(events, simulatortype.UpdateScooterStatusRequestBody{
-				ScooterID: uuid.New().String(),
-				EventType: scooter.PeriodicUpdate,
-				Timestamp: time.Now().Format(time.RFC3339),
-				Latitude:  fmt.Sprintf("%f", lat),
-				Longitude: fmt.Sprintf("%f", lng),
-			})
-
-			if len(events) >= s.numberOfScooters {
-				return events
-			}
-		}
-		distance = distance + .2
-
+func addNewScooter(s *ScooterSimulator, ctx context.Context) (*string, error) {
+	scooterID := uuid.New().String()
+	if err := s.scooterCreator.Create(ctx, scootertype.Scooter{
+		ID:    scooterID,
+		InUse: false,
+	}); err != nil {
+		return nil, err
 	}
-
+	return &scooterID, nil
 }
 
-func ShiftLocation(latitude, longitude float64, distance, bearing float64) (lat, lng float64) {
+func shiftLocation(latitude, longitude float64, distance, bearing float64) (lat, lng float64) {
 
 	R := 6378.1                     // Radius of the Earth
 	brng := bearing * math.Pi / 180 // Convert bearing to radian

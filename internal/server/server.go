@@ -11,9 +11,10 @@ import (
 )
 
 type Server struct {
-	StatusUpdater scooteriface.ScooterStatusUpdater
-	ScooterFinder scooteriface.ScooterFinder
-	jwtTokenKey   string
+	ScooterReserver scooteriface.ScooterReserver
+	StatusUpdater   scooteriface.ScooterStatusUpdater
+	ScooterFinder   scooteriface.ScooterFinder
+	jwtTokenKey     string
 }
 
 func NewServer() (*Server, error) {
@@ -28,10 +29,16 @@ func NewServer() (*Server, error) {
 		return nil, err
 	}
 
+	scooterReserver, err := scooter.NewScooterReserver()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Server{
-		StatusUpdater: statusUpdater,
-		ScooterFinder: scooterFinder,
-		jwtTokenKey:   config.GetConfig("JWT_TOKEN_KEY"),
+		StatusUpdater:   statusUpdater,
+		ScooterFinder:   scooterFinder,
+		ScooterReserver: scooterReserver,
+		jwtTokenKey:     config.GetConfig("JWT_TOKEN_KEY"),
 	}, nil
 
 }
@@ -42,6 +49,8 @@ func (s Server) Start() error {
 
 	router := httprouter.New()
 	router.POST("/api/scooter/status", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.UpdateScooterStatus)))
+	router.PUT("/api/scooter/reserve", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReserveScooter)))
+	router.PUT("/api/scooter/release", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReleaseScooter)))
 	router.GET("/api/search/scooter", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.FindScooter)))
 
 	fmt.Println("Starting...")

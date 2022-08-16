@@ -25,9 +25,9 @@ const (
 )
 
 const (
-	SCOOTER_STATUS_FREE  string = "free"
-	SCOOTER_STATUS_INUSE string = "occupied"
-	SCOOTER_COLLECTION   string = "scooter"
+	SCOOTER_STATUS_FREE       string = "free"
+	SCOOTER_STATUS_INUSE      string = "occupied"
+	SCOOTER_STATUS_COLLECTION string = "scooter-status"
 )
 
 type StatusUpdater struct {
@@ -48,7 +48,13 @@ func NewStatusUpdater() (scooteriface.ScooterStatusUpdater, error) {
 	}, nil
 }
 
-func (s *StatusUpdater) UpdateStatus(ctx context.Context, updateStatusInput scootertype.ScooterStatusUpdaterInput) (*string, error) {
+func (s *StatusUpdater) UpdateStatus(ctx context.Context, updateStatusInput struct {
+	ScooterID string
+	Timestamp string
+	Latitude  string
+	Longitude string
+	EventType string
+}) (*string, error) {
 
 	timestamp, err := time.Parse(time.RFC3339, updateStatusInput.Timestamp)
 	if err != nil {
@@ -58,7 +64,7 @@ func (s *StatusUpdater) UpdateStatus(ctx context.Context, updateStatusInput scoo
 		)
 	}
 
-	location := scootertype.GeoJSON{}
+	var location scootertype.GeoJSON
 	if err := parseLocation(updateStatusInput.Latitude, updateStatusInput.Longitude, &location); err != nil {
 		return nil, apperror.NewAppError(
 			apperror.WithError(fmt.Errorf("UpdateStatus: err= %w", err)),
@@ -83,7 +89,7 @@ func (s *StatusUpdater) UpdateStatus(ctx context.Context, updateStatusInput scoo
 		Location:  location,
 	}
 
-	result, err := s.DB.Collection(SCOOTER_COLLECTION).InsertOne(ctx, event)
+	result, err := s.DB.Collection(SCOOTER_STATUS_COLLECTION).InsertOne(ctx, event)
 	if err != nil {
 		return nil, fmt.Errorf("UpdateStatus: insert err=%w", err)
 	}

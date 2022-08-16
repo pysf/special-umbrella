@@ -7,9 +7,28 @@ import (
 )
 
 type ScooterStatusUpdater interface {
-	UpdateStatus(ctx context.Context, scooterStatusUpdaterInput scootertype.ScooterStatusUpdaterInput) (*string, error)
+	UpdateStatus(context.Context, struct {
+		ScooterID string
+		Timestamp string
+		Latitude  string
+		Longitude string
+		EventType string
+	}) (*string, error)
 }
 
 type ScooterFinder interface {
-	RectangularQuery(ctx context.Context, bottomLeft scootertype.Location, topRigth scootertype.Location) (*scootertype.RectangularQueryResult, error)
+	RectangularQuery(context.Context, struct {
+		Status     string
+		BottomLeft scootertype.Location
+		TopRight   scootertype.Location
+	}) (*scootertype.RectangularQueryResult, error)
+}
+
+type ScooterReserver interface {
+	ReserveScooter(ctx context.Context, scooterID string) (bool, error)
+	ReleaseScooter(ctx context.Context, scooterID string) error
+}
+
+type ScooterCreator interface {
+	Create(ctx context.Context, scooter scootertype.Scooter) error
 }

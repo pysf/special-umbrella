@@ -15,4 +15,13 @@ type UpdateScooterStatusRequest struct {
 type FindScootersRequest struct {
 	BottomLeft scootertype.Location `json:"bottomLeft" validate:"len=2,dive,required"`
 	TopRight   scootertype.Location `json:"topRight" validate:"len=2,dive,required"`
+	Status     string               `json:"status" validate:"required"`
+}
+
+type ReserveScooterRequest struct {
+	ID string `json:"id" validate:"required,uuid4"`
+}
+
+type ReleaseScooterRequest struct {
+	ID string `json:"id" validate:"required,uuid4"`
 }

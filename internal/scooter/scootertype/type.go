@@ -9,14 +9,6 @@ import "time"
 
 type Location [2]float64
 
-type ScooterStatusUpdaterInput struct {
-	ScooterID string
-	Timestamp string
-	Latitude  string
-	Longitude string
-	EventType string
-}
-
 type ScooterStatus struct {
 	ID        string    `bson:"_id,omitempty"`
 	ScooterID string    `bson:"scooterID"`
@@ -32,12 +24,17 @@ type GeoJSON struct {
 }
 
 type RectangularQueryResult struct {
-	Scooters []Scooter `json:"scooters"`
+	Scooters []ScooterAggregationItems `json:"scooters"`
+}
+
+type ScooterAggregationItems struct {
+	ScooterID  string    `bson:"_id" json:"scooterID"`
+	Status     string    `bson:"status" json:"status"`
+	LastUpdate time.Time `bson:"timestamp" json:"lastStatus"`
+	Location   Location  `bson:"location" json:"location"`
 }
 
 type Scooter struct {
-	ScooterID  string    `bson:"_id" json:"scooterID"`
-	Status     string    `bson:"status" json:"status"`
-	LastStatus time.Time `bson:"timestamp" json:"lastStatus"`
-	Location   Location  `bson:"location" json:"location"`
+	ID    string `bson:"_id" json:"ID"`
+	InUse bool   `bson:"inuse" json:"inuse"`
 }

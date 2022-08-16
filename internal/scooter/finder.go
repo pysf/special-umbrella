@@ -29,20 +29,25 @@ func NewScooterFinder() (*ScooterFinder, error) {
 	}, nil
 }
 
-func (s *ScooterFinder) RectangularQuery(ctx context.Context, bottomLeft scootertype.Location, topRigth scootertype.Location) (*scootertype.RectangularQueryResult, error) {
+func (s *ScooterFinder) RectangularQuery(ctx context.Context, q struct {
+	Status     string
+	BottomLeft scootertype.Location
+	TopRight   scootertype.Location
+}) (*scootertype.RectangularQueryResult, error) {
 
 	matchStage := bson.D{
 		{Key: "$match", Value: bson.D{
+			{Key: "status", Value: bson.D{{Key: "$eq", Value: q.Status}}},
 			{Key: "location", Value: bson.D{
 				{Key: "$geoWithin", Value: bson.D{
 					{Key: "$box", Value: bson.A{
 						bson.A{
-							bottomLeft[0],
-							bottomLeft[1],
+							q.BottomLeft[0],
+							q.BottomLeft[1],
 						},
 						bson.A{
-							topRigth[0],
-							topRigth[1],
+							q.TopRight[0],
+							q.TopRight[1],
 						},
 					},
 					},
@@ -68,13 +73,13 @@ func (s *ScooterFinder) RectangularQuery(ctx context.Context, bottomLeft scooter
 	}
 
 	//Todo: add limit and offset to enable pagination
-	cursor, err := s.DB.Collection(SCOOTER_COLLECTION).Aggregate(ctx, mongo.Pipeline{matchStage, sortStage, groupByStage})
+	cursor, err := s.DB.Collection(SCOOTER_STATUS_COLLECTION).Aggregate(ctx, mongo.Pipeline{matchStage, sortStage, groupByStage})
 	if err != nil {
 		return nil, fmt.Errorf("RectangularQuery: err= %w", err)
 	}
 
 	result := scootertype.RectangularQueryResult{
-		Scooters: []scootertype.Scooter{},
+		Scooters: []scootertype.ScooterAggregationItems{},
 	}
 	if err := cursor.All(ctx, &result.Scooters); err != nil {
 		return nil, fmt.Errorf("RectangularQuery: faild to read quecy result, err= %w", err)

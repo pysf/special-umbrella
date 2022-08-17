@@ -64,16 +64,17 @@ func (s *Server) UpdateScooterStatus(w http.ResponseWriter, r *http.Request, p h
 func (s *Server) FindScooter(w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 
 	var query servertype.FindScootersRequest
-	query.Status = r.URL.Query().Get("status")
+	q := r.URL.Query()
+	query.Status = q.Get("status")
 
-	if err := json.Unmarshal([]byte(r.URL.Query().Get("bottomLeft")), &query.BottomLeft); err != nil {
+	if err := json.Unmarshal([]byte(q.Get("bottomLeft")), &query.BottomLeft); err != nil {
 		return apperror.NewAppError(
 			apperror.WithStatusCode(http.StatusBadRequest),
 			apperror.WithError(fmt.Errorf("FinedScooter: invalid bottomLeft coordination, err= %w , expected : [latitude, longitude] ", err)),
 		)
 	}
 
-	if err := json.Unmarshal([]byte(r.URL.Query().Get("topRight")), &query.TopRight); err != nil {
+	if err := json.Unmarshal([]byte(q.Get("topRight")), &query.TopRight); err != nil {
 		return apperror.NewAppError(
 			apperror.WithStatusCode(http.StatusBadRequest),
 			apperror.WithError(fmt.Errorf("FinedScooter: invalid topRight coordination, err= %w , expected : [latitude, longitude] ", err)),

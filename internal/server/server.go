@@ -19,17 +19,17 @@ type Server struct {
 
 func NewServer() (*Server, error) {
 
-	statusUpdater, err := scooter.NewStatusUpdater()
+	scooterReserver, err := scooter.NewScooterReserver()
+	if err != nil {
+		return nil, err
+	}
+
+	statusUpdater, err := scooter.NewStatusUpdater(scooterReserver)
 	if err != nil {
 		return nil, err
 	}
 
 	scooterFinder, err := scooter.NewScooterFinder()
-	if err != nil {
-		return nil, err
-	}
-
-	scooterReserver, err := scooter.NewScooterReserver()
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (s Server) Start() error {
 	router.POST("/api/scooter/status", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.UpdateScooterStatus)))
 	router.PUT("/api/scooter/reserve", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReserveScooter)))
 	router.PUT("/api/scooter/release", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReleaseScooter)))
-	router.GET("/api/search/scooter", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.FindScooter)))
+	router.GET("/api/scooter/search", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.FindScooter)))
 
 	fmt.Println("Starting...")
 	return http.ListenAndServe(":8080", router)

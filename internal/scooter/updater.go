@@ -18,23 +18,24 @@ import (
 )
 
 const (
-	TripStarted    string = "trip-started"
-	TripEnded      string = "trip-ended"
-	TripUpdate     string = "trip-update"
-	PeriodicUpdate string = "periodic-update"
+	EVENT_TRIP_STARTED    string = "trip-started"
+	EVENT_TRIP_ENDED      string = "trip-ended"
+	EVENT_TRIP_UPDATED    string = "trip-update"
+	EVENT_PERIODIC_UPDATE string = "periodic-update"
 )
 
 const (
-	SCOOTER_STATUS_FREE       string = "free"
-	SCOOTER_STATUS_INUSE      string = "occupied"
+	SCOOTER_STATUS_AVAILABLE  string = "available"
+	SCOOTER_STATUS_INUSE      string = "inuse"
 	SCOOTER_STATUS_COLLECTION string = "scooter-status"
 )
 
 type StatusUpdater struct {
-	DB *mongo.Database
+	DB              *mongo.Database
+	ScooterReserver scooteriface.ScooterReserver
 }
 
-func NewStatusUpdater() (scooteriface.ScooterStatusUpdater, error) {
+func NewStatusUpdater(ScooterReserver scooteriface.ScooterReserver) (scooteriface.ScooterStatusUpdater, error) {
 
 	client, err := db.CreateConnection()
 	if err != nil {
@@ -44,7 +45,8 @@ func NewStatusUpdater() (scooteriface.ScooterStatusUpdater, error) {
 	DB := client.Database(config.GetConfig("MONGODB_DATABASE"))
 
 	return &StatusUpdater{
-		DB: DB,
+		DB:              DB,
+		ScooterReserver: ScooterReserver,
 	}, nil
 }
 
@@ -95,6 +97,13 @@ func (s *StatusUpdater) UpdateStatus(ctx context.Context, updateStatusInput stru
 	}
 
 	id := fmt.Sprint(result.InsertedID)
+	// we need to release the scooter after the end-event received
+	if updateStatusInput.EventType == EVENT_TRIP_ENDED {
+		if err = s.ScooterReserver.ReleaseScooter(ctx, updateStatusInput.ScooterID); err != nil {
+			return nil, fmt.Errorf("UpdateStatus: release scooter err= %w", err)
+		}
+	}
+
 	return &id, nil
 
 }
@@ -118,14 +127,14 @@ func parseLocation(lat, lng string, l *scootertype.GeoJSON) error {
 
 func decideStatus(eventType string) (string, error) {
 	switch eventType {
-	case TripStarted:
+	case EVENT_TRIP_STARTED:
 		return SCOOTER_STATUS_INUSE, nil
-	case TripUpdate:
+	case EVENT_TRIP_UPDATED:
 		return SCOOTER_STATUS_INUSE, nil
-	case TripEnded:
-		return SCOOTER_STATUS_FREE, nil
-	case PeriodicUpdate:
-		return SCOOTER_STATUS_FREE, nil
+	case EVENT_TRIP_ENDED:
+		return SCOOTER_STATUS_AVAILABLE, nil
+	case EVENT_PERIODIC_UPDATE:
+		return SCOOTER_STATUS_AVAILABLE, nil
 	default:
 		return "", fmt.Errorf("eventStatus: err: %v is invalid type", eventType)
 	}

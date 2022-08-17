@@ -6,33 +6,17 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/pysf/special-umbrella/internal/config"
-	"github.com/pysf/special-umbrella/internal/scooter"
 	"github.com/pysf/special-umbrella/internal/scooter/scooteriface"
 )
 
 type Server struct {
 	ScooterReserver scooteriface.ScooterReserver
-	StatusUpdater   scooteriface.ScooterStatusUpdater
+	StatusUpdater   scooteriface.StatusUpdater
 	ScooterFinder   scooteriface.ScooterFinder
 	jwtTokenKey     string
 }
 
-func NewServer() (*Server, error) {
-
-	scooterReserver, err := scooter.NewScooterReserver()
-	if err != nil {
-		return nil, err
-	}
-
-	statusUpdater, err := scooter.NewStatusUpdater(scooterReserver)
-	if err != nil {
-		return nil, err
-	}
-
-	scooterFinder, err := scooter.NewScooterFinder()
-	if err != nil {
-		return nil, err
-	}
+func NewServer(statusUpdater scooteriface.StatusUpdater, scooterFinder scooteriface.ScooterFinder, scooterReserver scooteriface.ScooterReserver) (*Server, error) {
 
 	return &Server{
 		StatusUpdater:   statusUpdater,
@@ -48,7 +32,7 @@ type httpHandlerFunc func(http.ResponseWriter, *http.Request, httprouter.Params)
 func (s Server) Start() error {
 
 	router := httprouter.New()
-	router.POST("/api/scooter/status", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.UpdateScooterStatus)))
+	router.POST("/api/scooter/status", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.AddScooterStatus)))
 	router.PUT("/api/scooter/reserve", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReserveScooter)))
 	router.PUT("/api/scooter/release", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReleaseScooter)))
 	router.GET("/api/scooter/search", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.FindScooter)))

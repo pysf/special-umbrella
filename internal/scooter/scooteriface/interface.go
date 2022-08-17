@@ -6,7 +6,7 @@ import (
 	"github.com/pysf/special-umbrella/internal/scooter/scootertype"
 )
 
-type ScooterStatusUpdater interface {
+type StatusUpdater interface {
 	UpdateStatus(context.Context, struct {
 		ScooterID string
 		Timestamp string

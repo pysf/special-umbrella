@@ -46,7 +46,10 @@ func Start(ctx context.Context) {
 			select {
 			case <-ctx.Done():
 				return
-			case sr := <-botResultsCh:
+			case sr, ok := <-botResultsCh:
+				if !ok {
+					return
+				}
 				if sr.Err != nil {
 					fmt.Printf("Simulator Err= %v \n", sr.Err)
 					return
@@ -117,7 +120,10 @@ func (s *Simulator) ClientBot(scooterCh <-chan clienttype.Scooter) <-chan simula
 			select {
 			case <-s.ctx.Done():
 				return
-			case sc := <-scooterCh:
+			case sc, ok := <-scooterCh:
+				if !ok {
+					return
+				}
 
 				reserved, err := s.apiClient.ReserverScooter(clienttype.ReserveScooterRequestBody{
 					ScooterID: sc.ScooterID,

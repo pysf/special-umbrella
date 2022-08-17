@@ -13,7 +13,7 @@ import (
 	"github.com/pysf/special-umbrella/internal/server/servertype"
 )
 
-func (s *Server) UpdateScooterStatus(w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+func (s *Server) AddScooterStatus(w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {

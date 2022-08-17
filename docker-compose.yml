@@ -27,6 +27,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    restart: on-failure    
+    depends_on:
+      - db
     environment:
       - MONGODB_URI=mongodb://special_umbrella:TBA2yac4kjzhnj2bqn@db:27017/special_umbrella
       - MONGODB_DATABASE=special_umbrella

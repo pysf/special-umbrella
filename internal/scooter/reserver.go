@@ -6,8 +6,6 @@ import (
 	"net/http"
 
 	"github.com/pysf/special-umbrella/internal/apperror"
-	"github.com/pysf/special-umbrella/internal/config"
-	"github.com/pysf/special-umbrella/internal/db"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -16,14 +14,7 @@ type ScooterReserver struct {
 	DB *mongo.Database
 }
 
-func NewScooterReserver() (*ScooterReserver, error) {
-
-	client, err := db.CreateConnection()
-	if err != nil {
-		return nil, fmt.Errorf("NewScooterReserver: err=%w", err)
-	}
-
-	DB := client.Database(config.GetConfig("MONGODB_DATABASE"))
+func NewScooterReserver(DB *mongo.Database) (*ScooterReserver, error) {
 
 	return &ScooterReserver{
 		DB: DB,

@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pysf/special-umbrella/internal/config"
-	"github.com/pysf/special-umbrella/internal/db"
 	"github.com/pysf/special-umbrella/internal/scooter/scooteriface"
 	"github.com/pysf/special-umbrella/internal/scooter/scootertype"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -19,14 +17,7 @@ type ScooterCreator struct {
 	DB *mongo.Database
 }
 
-func NewScooterCreator() (scooteriface.ScooterCreator, error) {
-
-	client, err := db.CreateConnection()
-	if err != nil {
-		return nil, fmt.Errorf("NewScooterCreator: create connection err=%w", err)
-	}
-
-	DB := client.Database(config.GetConfig("MONGODB_DATABASE"))
+func NewScooterCreator(DB *mongo.Database) (scooteriface.ScooterCreator, error) {
 
 	return &ScooterCreator{
 		DB: DB,

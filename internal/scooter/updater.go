@@ -9,8 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pysf/special-umbrella/internal/apperror"
-	"github.com/pysf/special-umbrella/internal/config"
-	"github.com/pysf/special-umbrella/internal/db"
 	"github.com/pysf/special-umbrella/internal/scooter/scooteriface"
 	"github.com/pysf/special-umbrella/internal/scooter/scootertype"
 
@@ -35,14 +33,7 @@ type StatusUpdater struct {
 	ScooterReserver scooteriface.ScooterReserver
 }
 
-func NewStatusUpdater(ScooterReserver scooteriface.ScooterReserver) (scooteriface.ScooterStatusUpdater, error) {
-
-	client, err := db.CreateConnection()
-	if err != nil {
-		return nil, fmt.Errorf("NewStatusUpdater: create connection err=%w", err)
-	}
-
-	DB := client.Database(config.GetConfig("MONGODB_DATABASE"))
+func NewStatusUpdater(ScooterReserver scooteriface.ScooterReserver, DB *mongo.Database) (scooteriface.StatusUpdater, error) {
 
 	return &StatusUpdater{
 		DB:              DB,

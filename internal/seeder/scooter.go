@@ -3,8 +3,8 @@ package seeder
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
-	"math/rand"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,8 +30,6 @@ type ScooterDataSeeder struct {
 func Start(ctx context.Context, scooterCreator scooteriface.ScooterCreator, statusUpdater scooteriface.StatusUpdater, options ...ScooterDataSeederOptions) {
 
 	seeder := &ScooterDataSeeder{
-		baseLat:           52.519511, //Berlin center
-		baseLng:           13.403725,
 		ctx:               ctx,
 		scootersPerCircle: 10,
 		numberOfScooters:  100,
@@ -48,7 +46,7 @@ func Start(ctx context.Context, scooterCreator scooteriface.ScooterCreator, stat
 	go func() {
 		time.Sleep(seeder.startDelay)
 		if err := seeder.addRandomScooters(); err != nil {
-			fmt.Printf("Start: failed to add scooters err=%v", err)
+			log.Printf("Start: failed to add scooters err=%v", err)
 		}
 	}()
 
@@ -97,7 +95,7 @@ func (s *ScooterDataSeeder) addRandomScooters() error {
 	var counter int
 	for {
 
-		for i := 0; i < s.scootersPerCircle; i++ {
+		for i := 1; i < s.scootersPerCircle; i++ {
 
 			// Add a new scooter
 			scooterID, err := CreateRandomScooter(s)
@@ -106,7 +104,7 @@ func (s *ScooterDataSeeder) addRandomScooters() error {
 			}
 
 			// Add a new scooter init event
-			lat, lng := ShiftLocation(s.baseLat, s.baseLng, distance, (360/rand.Float64() + 1))
+			lat, lng := ShiftLocation(s.baseLat, s.baseLng, distance, (20*i)%360)
 			s.statusUpdater.UpdateStatus(s.ctx, struct {
 				ScooterID string
 				Timestamp string
@@ -142,11 +140,11 @@ func CreateRandomScooter(s *ScooterDataSeeder) (*string, error) {
 	return &scooterID, nil
 }
 
-func ShiftLocation(latitude, longitude float64, distance, bearing float64) (lat, lng float64) {
+func ShiftLocation(latitude, longitude float64, distance float64, bearing int) (lat, lng float64) {
 
-	R := 6378.1                     // Radius of the Earth
-	brng := bearing * math.Pi / 180 // Convert bearing to radian
-	lat = latitude * math.Pi / 180  // Current coords to radians
+	R := 6378.1                              // Radius of the Earth
+	brng := float64(bearing) * math.Pi / 180 // Convert bearing to radian
+	lat = latitude * math.Pi / 180           // Current coords to radians
 	lng = longitude * math.Pi / 180
 
 	// Do the math magic

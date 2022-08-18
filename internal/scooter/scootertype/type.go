@@ -24,10 +24,10 @@ type GeoJSON struct {
 }
 
 type RectangularQueryResult struct {
-	Scooters []ScooterAggregationItems `json:"scooters"`
+	Scooters []RectangularQueryResultItem `json:"scooters"`
 }
 
-type ScooterAggregationItems struct {
+type RectangularQueryResultItem struct {
 	ScooterID  string    `bson:"_id" json:"scooterID"`
 	Status     string    `bson:"status" json:"status"`
 	LastUpdate time.Time `bson:"timestamp" json:"lastStatus"`

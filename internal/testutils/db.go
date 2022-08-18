@@ -1,4 +1,4 @@
-package utils
+package testutils
 
 import (
 	"context"
@@ -9,17 +9,22 @@ import (
 	"github.com/pysf/special-umbrella/internal/db"
 	"github.com/pysf/special-umbrella/internal/scooter"
 	"github.com/pysf/special-umbrella/internal/seeder"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func PrepareTestDatabase(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+func GetDBConnection(t *testing.T) *mongo.Database {
 
-	client, err := db.CreateConnection()
+	client, err := db.CreateConnection(context.TODO())
 	if err != nil {
 		t.Fatal(err)
 	}
-	DB := client.Database(config.GetConfig("MONGODB_DATABASE"))
+	return client.Database(config.GetConfig("MONGODB_DATABASE"))
+
+}
+
+func PrepareTestDatabase(DB *mongo.Database, t *testing.T) {
+
+	ctx := context.TODO()
 
 	scooterReserver, err := scooter.NewScooterReserver(DB)
 	if err != nil {
@@ -37,12 +42,14 @@ func PrepareTestDatabase(t *testing.T) {
 	}
 
 	seeder.Start(ctx, scooterCreator, statusUpdater,
-		seeder.WithCount(100),
+		seeder.WithCount(200),
 		seeder.WithDistanceShift(1),
 		seeder.WithStartDelay(0),
-		seeder.WithLat(52.520091),
-		seeder.WithLng(13.393079),
+		seeder.WithLat(BerlinCenterLat),
+		seeder.WithLng(BerlinCenterLng),
+		seeder.WithScooterPerCircle(18),
 	)
 
 	time.Sleep(3 * time.Second)
+
 }

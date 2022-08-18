@@ -10,14 +10,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-func CreateConnection() (*mongo.Client, error) {
+func CreateConnection(ctx context.Context) (*mongo.Client, error) {
 
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(config.GetConfig("MONGODB_URI")))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.GetConfig("MONGODB_URI")))
 	if err != nil {
 		return nil, fmt.Errorf("CreateConnection: err= %w", err)
 	}
 
-	if err = client.Ping(context.TODO(), readpref.Primary()); err != nil {
+	if err = client.Ping(ctx, readpref.Primary()); err != nil {
 		return nil, fmt.Errorf("CreateConnoction: ping err= %w", err)
 	}
 

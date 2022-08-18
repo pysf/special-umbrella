@@ -15,7 +15,10 @@ import (
 
 func main() {
 
-	client, err := db.CreateConnection()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	client, err := db.CreateConnection(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -40,9 +43,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	seeder.Start(ctx, scooterCreator, statusUpdater,
 		seeder.WithCount(2),

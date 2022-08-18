@@ -46,26 +46,26 @@ func (c *APIClient) FindScooters(bottomLeft, topRight [2]float64, status string)
 	req.Header.Add("Authorization", c.jwtToken)
 
 	client := &http.Client{}
-	result, err := client.Do(req)
+	response, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("FindScooters: http client err=%w", err)
 	}
 
-	b, err := ioutil.ReadAll(result.Body)
+	b, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return nil, fmt.Errorf("FindScooters: failed to read response body err= %w", err)
 	}
 
-	if result.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("FindScooters: api err=%v %v %v", result.Status, result.StatusCode, string(b))
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("FindScooters: api err=%v %v %v", response.Status, response.StatusCode, string(b))
 	}
 
-	var scooters clienttype.ScooterScearchResult
-	if err := json.Unmarshal(b, &scooters); err != nil {
+	var result clienttype.ScooterScearchResult
+	if err := json.Unmarshal(b, &result); err != nil {
 		return nil, fmt.Errorf("FinedScooters: failed to parse response json body err= %w", err)
 	}
 
-	return &scooters, nil
+	return &result, nil
 }
 
 func (c *APIClient) PublishScooterStatus(statusEvent clienttype.UpdateScooterRequestBody) error {

@@ -1,7 +1,7 @@
 package server
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -18,7 +18,7 @@ func (Server) wrapWithErrorHandler(fn httpHandlerFunc) httprouter.Handle {
 
 		appErr, ok := err.(apperror.AppError)
 		if !ok {
-			fmt.Printf("An error occured err= %s", err)
+			log.Printf("wrapWithErrorHandler: err= %s", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}

@@ -3,6 +3,7 @@ package simulator
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"sync"
 	"time"
@@ -51,10 +52,10 @@ func Start(ctx context.Context) {
 					return
 				}
 				if sr.Err != nil {
-					fmt.Printf("Simulator Err= %v \n", sr.Err)
+					log.Printf("Simulator Err= %v \n", sr.Err)
 					return
 				}
-				fmt.Printf("Simulator: %v \n", sr.Message)
+				log.Printf("Simulator: %v \n", sr.Message)
 			}
 		}
 
@@ -69,7 +70,7 @@ func (s *Simulator) RunBots() chan simulatortype.SimulatorResponse {
 	go func() {
 		defer close(resultChan)
 		time.Sleep(s.startDelay)
-		fmt.Println("Simulator started...")
+		log.Println("Simulator started...")
 
 		searchResult, err := s.apiClient.FindScooters(s.bottomLeft, s.topRight, "available")
 		if err != nil {
@@ -79,7 +80,7 @@ func (s *Simulator) RunBots() chan simulatortype.SimulatorResponse {
 			return
 		}
 		scooters := searchResult.Scooters
-		fmt.Printf("%v scooters are avalable \n", len(scooters))
+		log.Printf("%v scooters are available \n", len(scooters))
 
 		scooterCh := make(chan clienttype.Scooter, len(scooters))
 		defer close(scooterCh)

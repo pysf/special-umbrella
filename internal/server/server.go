@@ -1,7 +1,7 @@
 package server
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -9,35 +9,40 @@ import (
 	"github.com/pysf/special-umbrella/internal/scooter/scooteriface"
 )
 
+type httpHandlerFunc func(http.ResponseWriter, *http.Request, httprouter.Params) error
+
 type Server struct {
 	ScooterReserver scooteriface.ScooterReserver
 	StatusUpdater   scooteriface.StatusUpdater
 	ScooterFinder   scooteriface.ScooterFinder
+	HttpRouter      *httprouter.Router
 	jwtTokenKey     string
 }
 
 func NewServer(statusUpdater scooteriface.StatusUpdater, scooterFinder scooteriface.ScooterFinder, scooterReserver scooteriface.ScooterReserver) (*Server, error) {
 
-	return &Server{
+	server := &Server{
 		StatusUpdater:   statusUpdater,
 		ScooterFinder:   scooterFinder,
 		ScooterReserver: scooterReserver,
 		jwtTokenKey:     config.GetConfig("JWT_TOKEN_KEY"),
-	}, nil
+		HttpRouter:      httprouter.New(),
+	}
+	server.addRoutes()
 
+	return server, nil
 }
 
-type httpHandlerFunc func(http.ResponseWriter, *http.Request, httprouter.Params) error
+func (s *Server) addRoutes() {
+	s.HttpRouter.POST("/api/scooter/status", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.AddScooterStatus)))
+	s.HttpRouter.PUT("/api/scooter/reserve", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReserveScooter)))
+	s.HttpRouter.PUT("/api/scooter/release", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReleaseScooter)))
+	s.HttpRouter.GET("/api/scooter/search", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.FindScooter)))
+}
 
 func (s Server) Start() error {
 
-	router := httprouter.New()
-	router.POST("/api/scooter/status", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.AddScooterStatus)))
-	router.PUT("/api/scooter/reserve", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReserveScooter)))
-	router.PUT("/api/scooter/release", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReleaseScooter)))
-	router.GET("/api/scooter/search", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.FindScooter)))
-
-	fmt.Println("Starting...")
-	return http.ListenAndServe(":8080", router)
+	log.Println("Starting...")
+	return http.ListenAndServe(":8080", s.HttpRouter)
 
 }

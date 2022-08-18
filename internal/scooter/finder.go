@@ -77,7 +77,7 @@ func (s *ScooterFinder) RectangularQuery(ctx context.Context, q struct {
 	}
 
 	result := scootertype.RectangularQueryResult{
-		Scooters: []scootertype.ScooterAggregationItems{},
+		Scooters: []scootertype.RectangularQueryResultItem{},
 	}
 	if err := cursor.All(ctx, &result.Scooters); err != nil {
 		return nil, fmt.Errorf("RectangularQuery: faild to read quecy result, err= %w", err)

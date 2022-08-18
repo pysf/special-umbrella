@@ -45,9 +45,11 @@ func main() {
 	}
 
 	seeder.Start(ctx, scooterCreator, statusUpdater,
-		seeder.WithCount(2),
+		seeder.WithCount(100),
 		seeder.WithDistanceShift(1),
 		seeder.WithStartDelay(3*time.Second),
+		seeder.WithLat(52.520008),
+		seeder.WithLng(13.404954),
 	)
 
 	simulator.Start(ctx)

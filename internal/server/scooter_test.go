@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/pysf/special-umbrella/internal/client/clienttype"
-	"github.com/pysf/special-umbrella/internal/scooter"
 	"github.com/pysf/special-umbrella/internal/scooter/scootertype"
 	"github.com/pysf/special-umbrella/internal/server"
 	"github.com/pysf/special-umbrella/internal/testutils"
@@ -21,27 +20,12 @@ func TestServer_FindScooter(t *testing.T) {
 	DB := testutils.GetDBConnection(t)
 	testutils.PrepareTestDatabase(DB, t)
 
-	scooterReserver, err := scooter.NewScooterReserver(DB)
+	server, err := server.NewServer(DB)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	statusUpdater, err := scooter.NewStatusUpdater(scooterReserver, DB)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	scooterFinder, err := scooter.NewScooterFinder(DB)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	server, err := server.NewServer(statusUpdater, scooterFinder, scooterReserver)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	testserver := httptest.NewServer(server.HttpRouter)
+	testserver := httptest.NewServer(server.HttpHandler)
 	defer testserver.Close()
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/api/scooter/search", testserver.URL), nil)

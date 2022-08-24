@@ -1,11 +1,11 @@
-version: '3.8'
+version: "3.8"
 
 networks:
   app-net-test:
     driver: bridge
 
 services:
-  mongodb: 
+  mongodb:
     image: bitnami/mongodb:6.0
     networks:
       - app-net-test
@@ -21,6 +21,8 @@ services:
       context: .
       dockerfile: Dockerfile.test
     restart: on-failure
+    depends_on:
+      - mongodb
     ports:
       - "8081:8080"
     networks:
@@ -33,9 +35,3 @@ services:
       - BASE_URL=http://tests:8080
       - JWT_TOKEN_KEY=qwertyuiopasdfghjklzxcvbnm123456
       - JWT_TOKEN=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE2NjAyMjMzMzYsImV4cCI6MTY5MTc1OTMzNiwiYXVkIjoiTm9yZFNlYyIsInN1YiI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJHaXZlbk5hbWUiOiJKb2hubnkiLCJTdXJuYW1lIjoiUm9ja2V0IiwiRW1haWwiOiJqcm9ja2V0QGV4YW1wbGUuY29tIiwiUm9sZSI6WyJNYW5hZ2VyIiwiUHJvamVjdCBBZG1pbmlzdHJhdG9yIl19.pL33ccNnN7KL1i9ErzVPCoMmr0o-y7FVm2Bo209aVus
-      - SIMULATOR_BOTTOM_LEFT_LAT=52.415548
-      - SIMULATOR_BOTTOM_LEFT_LNG=13.216032
-      - SIMULATOR_TOP_RIGHT_LAT=52.621397
-      - SIMULATOR_TOP_RIGHT_LNG=13.597643
-      - SIMULATOR_BOT_COUNTS=1
-      - SIMULATOR_START_DELAY=10

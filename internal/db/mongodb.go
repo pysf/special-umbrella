@@ -12,7 +12,7 @@ import (
 
 func CreateConnection(ctx context.Context) (*mongo.Client, error) {
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.GetConfig("MONGODB_URI")))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.AppConf().MongoURI))
 	if err != nil {
 		return nil, fmt.Errorf("CreateConnection: err= %w", err)
 	}

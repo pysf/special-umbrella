@@ -13,8 +13,11 @@ services:
     image: bitnami/mongodb:6.0
     ports:
       - 27017:27017
-    env_file:
-      - .env
+    environment:
+      - MONGODB_USERNAME=special_umbrella
+      - MONGODB_ROOT_PASSWORD=BediraeougcoeudHheu
+      - MONGODB_PASSWORD=TBA2yac4kjzhnj2bqn
+      - MONGODB_DATABASE=special_umbrella
     networks:
       - app-net
     volumes:
@@ -26,7 +29,7 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
-    restart: on-failure    
+    restart: on-failure
     depends_on:
       - db
     ports:

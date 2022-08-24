@@ -7,7 +7,6 @@ import (
 
 	"github.com/pysf/special-umbrella/internal/config"
 	"github.com/pysf/special-umbrella/internal/db"
-	"github.com/pysf/special-umbrella/internal/scooter"
 	"github.com/pysf/special-umbrella/internal/seeder"
 	"github.com/pysf/special-umbrella/internal/server"
 	"github.com/pysf/special-umbrella/internal/simulator"
@@ -22,39 +21,20 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	DB := client.Database(config.GetConfig("MONGODB_DATABASE"))
 
-	scooterReserver, err := scooter.NewScooterReserver(DB)
-	if err != nil {
-		panic(err)
-	}
+	DB := client.Database(config.AppConf().MongoDatabase)
 
-	statusUpdater, err := scooter.NewStatusUpdater(scooterReserver, DB)
-	if err != nil {
-		panic(err)
-	}
+	seeder.NewScooterDataSeeder(ctx, DB,
+		seeder.WithNumberOfInitialScooters(config.AppConf().SeederInitialScooters),
+		seeder.WithDistanceShift(float64(config.AppConf().SeederDistanceShift)),
+		seeder.WithStartDelay(time.Duration(config.AppConf().SeederStartDelay)),
+		seeder.WithLat(config.AppConf().SeederStartLat),
+		seeder.WithLng(config.AppConf().SeederStartLng),
+	).Start()
 
-	scooterFinder, err := scooter.NewScooterFinder(DB)
-	if err != nil {
-		panic(err)
-	}
+	simulator.NewSimulator(ctx).Start()
 
-	scooterCreator, err := scooter.NewScooterCreator(DB)
-	if err != nil {
-		panic(err)
-	}
-
-	seeder.Start(ctx, scooterCreator, statusUpdater,
-		seeder.WithCount(100),
-		seeder.WithDistanceShift(1),
-		seeder.WithStartDelay(3*time.Second),
-		seeder.WithLat(52.520008),
-		seeder.WithLng(13.404954),
-	)
-
-	simulator.Start(ctx)
-
-	server, err := server.NewServer(statusUpdater, scooterFinder, scooterReserver)
+	server, err := server.NewServer(DB)
 	if err != nil {
 		fmt.Printf("Failde to initiate server! err=%v \n", err)
 		panic(err)

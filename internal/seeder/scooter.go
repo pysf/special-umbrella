@@ -11,41 +11,56 @@ import (
 	"github.com/pysf/special-umbrella/internal/scooter"
 	"github.com/pysf/special-umbrella/internal/scooter/scooteriface"
 	"github.com/pysf/special-umbrella/internal/scooter/scootertype"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type ScooterDataSeederOptions func(s *ScooterDataSeeder)
 
 type ScooterDataSeeder struct {
-	baseLat           float64
-	baseLng           float64
 	scootersPerCircle int
 	numberOfScooters  int
-	startDelay        time.Duration
+	baseLat           float64
+	baseLng           float64
 	distanceShift     float64
+	startDelay        time.Duration
 	scooterCreator    scooteriface.ScooterCreator
 	statusUpdater     scooteriface.StatusUpdater
 	ctx               context.Context
 }
 
-func Start(ctx context.Context, scooterCreator scooteriface.ScooterCreator, statusUpdater scooteriface.StatusUpdater, options ...ScooterDataSeederOptions) {
+func NewScooterDataSeeder(ctx context.Context, DB *mongo.Database, options ...ScooterDataSeederOptions) *ScooterDataSeeder {
+	scooterReserver, err := scooter.NewScooterReserver(DB)
+	if err != nil {
+		panic(err)
+	}
 
+	statusUpdater, err := scooter.NewStatusUpdater(scooterReserver, DB)
+	if err != nil {
+		panic(err)
+	}
+
+	scooterCreator, err := scooter.NewScooterCreator(DB)
+	if err != nil {
+		panic(err)
+	}
 	seeder := &ScooterDataSeeder{
-		ctx:               ctx,
-		scootersPerCircle: 10,
-		numberOfScooters:  100,
-		distanceShift:     0.1,
-		startDelay:        3,
-		scooterCreator:    scooterCreator,
-		statusUpdater:     statusUpdater,
+		ctx:            ctx,
+		statusUpdater:  statusUpdater,
+		scooterCreator: scooterCreator,
 	}
 
 	for _, o := range options {
 		o(seeder)
 	}
 
+	return seeder
+}
+
+func (s *ScooterDataSeeder) Start() {
+
 	go func() {
-		time.Sleep(seeder.startDelay)
-		if err := seeder.addRandomScooters(); err != nil {
+		time.Sleep(s.startDelay)
+		if err := s.addRandomScooters(); err != nil {
 			log.Printf("Start: failed to add scooters err=%v", err)
 		}
 	}()
@@ -70,7 +85,7 @@ func WithDistanceShift(distance float64) ScooterDataSeederOptions {
 	}
 }
 
-func WithCount(c int) ScooterDataSeederOptions {
+func WithNumberOfInitialScooters(c int) ScooterDataSeederOptions {
 	return func(s *ScooterDataSeeder) {
 		s.numberOfScooters = c
 	}

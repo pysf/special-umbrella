@@ -6,7 +6,9 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/pysf/special-umbrella/internal/config"
+	"github.com/pysf/special-umbrella/internal/scooter"
 	"github.com/pysf/special-umbrella/internal/scooter/scooteriface"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type httpHandlerFunc func(http.ResponseWriter, *http.Request, httprouter.Params) error
@@ -15,18 +17,32 @@ type Server struct {
 	ScooterReserver scooteriface.ScooterReserver
 	StatusUpdater   scooteriface.StatusUpdater
 	ScooterFinder   scooteriface.ScooterFinder
-	HttpRouter      *httprouter.Router
+	HttpHandler     http.Handler
 	jwtTokenKey     string
 }
 
-func NewServer(statusUpdater scooteriface.StatusUpdater, scooterFinder scooteriface.ScooterFinder, scooterReserver scooteriface.ScooterReserver) (*Server, error) {
+func NewServer(DB *mongo.Database) (*Server, error) {
+
+	scooterReserver, err := scooter.NewScooterReserver(DB)
+	if err != nil {
+		panic(err)
+	}
+
+	statusUpdater, err := scooter.NewStatusUpdater(scooterReserver, DB)
+	if err != nil {
+		panic(err)
+	}
+
+	scooterFinder, err := scooter.NewScooterFinder(DB)
+	if err != nil {
+		panic(err)
+	}
 
 	server := &Server{
 		StatusUpdater:   statusUpdater,
 		ScooterFinder:   scooterFinder,
 		ScooterReserver: scooterReserver,
-		jwtTokenKey:     config.GetConfig("JWT_TOKEN_KEY"),
-		HttpRouter:      httprouter.New(),
+		jwtTokenKey:     config.AppConf().JWTTokenKey,
 	}
 	server.addRoutes()
 
@@ -34,15 +50,17 @@ func NewServer(statusUpdater scooteriface.StatusUpdater, scooterFinder scooterif
 }
 
 func (s *Server) addRoutes() {
-	s.HttpRouter.POST("/api/scooter/status", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.AddScooterStatus)))
-	s.HttpRouter.PUT("/api/scooter/reserve", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReserveScooter)))
-	s.HttpRouter.PUT("/api/scooter/release", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReleaseScooter)))
-	s.HttpRouter.GET("/api/scooter/search", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.FindScooter)))
+	httpRouter := httprouter.New()
+	httpRouter.POST("/api/scooter/status", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.AddScooterStatus)))
+	httpRouter.PUT("/api/scooter/reserve", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReserveScooter)))
+	httpRouter.PUT("/api/scooter/release", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.ReleaseScooter)))
+	httpRouter.GET("/api/scooter/search", s.wrapWithErrorHandler(s.wrapWithAuthenticator(s.FindScooter)))
+	s.HttpHandler = httpRouter
 }
 
 func (s Server) Start() error {
 
 	log.Println("Starting...")
-	return http.ListenAndServe(":8080", s.HttpRouter)
+	return http.ListenAndServe(":8080", s.HttpHandler)
 
 }

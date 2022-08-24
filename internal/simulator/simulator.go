@@ -24,15 +24,15 @@ type Simulator struct {
 	startDelay   time.Duration
 }
 
-func Start(ctx context.Context) {
+func NewSimulator(ctx context.Context) *Simulator {
 
-	apiClient := client.NewAPIClient(config.GetConfig("BASE_URL"), config.GetConfig("JWT_TOKEN"))
-	bottomLeft := [2]float64{config.GetConfigAsFloat("SIMULATOR_BOTTOM_LEFT_LAT"), config.GetConfigAsFloat("SIMULATOR_BOTTOM_LEFT_LNG")}
-	topRight := [2]float64{config.GetConfigAsFloat("SIMULATOR_TOP_RIGHT_LAT"), config.GetConfigAsFloat("SIMULATOR_TOP_RIGHT_LNG")}
-	numberOfBots := config.GetConfigAsInt("SIMULATOR_BOT_COUNTS")
-	startDelay := time.Duration(config.GetConfigAsInt("SIMULATOR_START_DELAY")) * time.Second
+	apiClient := client.NewAPIClient(config.AppConf().APIBaseURL, config.AppConf().JWTToken)
+	bottomLeft := [2]float64{config.AppConf().SimulatorBottomLeftLat, config.AppConf().SimulatorBottomLeftLng}
+	topRight := [2]float64{config.AppConf().SimulatorTopRightLat, config.AppConf().SimulatorTopRightLng}
+	numberOfBots := config.AppConf().SimulatorBotCounts
+	startDelay := time.Duration(config.AppConf().SimulatorStartDelay) * time.Second
 
-	simulator := &Simulator{
+	return &Simulator{
 		apiClient:    apiClient,
 		bottomLeft:   bottomLeft,
 		topRight:     topRight,
@@ -41,11 +41,15 @@ func Start(ctx context.Context) {
 		startDelay:   startDelay,
 	}
 
+}
+
+func (s *Simulator) Start() {
+
 	go func() {
-		botResultsCh := simulator.RunBots()
+		botResultsCh := s.RunBots()
 		for {
 			select {
-			case <-ctx.Done():
+			case <-s.ctx.Done():
 				return
 			case sr, ok := <-botResultsCh:
 				if !ok {

@@ -61,7 +61,12 @@ func (s *Simulator) Start() {
 
 		for _, sc := range scooters {
 			wg.Add(1)
-			s.RunClientBot(&wg, sc)
+			go func(sc clienttype.Scooter) {
+				if err := s.RunClientBot(sc); err != nil {
+					fmt.Println(fmt.Errorf("StartSimulator: err= %w", err))
+				}
+				wg.Done()
+			}(sc)
 		}
 
 		wg.Wait()
@@ -70,9 +75,7 @@ func (s *Simulator) Start() {
 
 }
 
-func (s *Simulator) RunClientBot(wg *sync.WaitGroup, sc clienttype.Scooter) error {
-
-	defer wg.Done()
+func (s *Simulator) RunClientBot(sc clienttype.Scooter) error {
 
 	reserved, err := s.apiClient.ReserverScooter(clienttype.ReserveScooterRequestBody{
 		ScooterID: sc.ScooterID,

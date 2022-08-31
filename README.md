@@ -23,7 +23,7 @@ Build: Makefile is provided to make life easier during run and build.
 
 HTTP API validation: I used go-playgorund to validate requests.
 
-## Cammands
+## Commands
 To execute tests run:
 ```sh
 make test
